@@ -5,12 +5,16 @@ using Microsoft.Bot.Connector;
 using Microsoft.Bot.Builder.Dialogs;
 using System.Web.Http.Description;
 using System.Net.Http;
+using System.Linq;
+using System;
+using ElderBot.Dialogs;
 
 namespace ElderBot
 {
     [BotAuthentication]
     public class MessagesController : ApiController
     {
+        public int msgcount = 0;
         /// <summary>
         /// POST: api/Messages
         /// receive a message from a user and send replies
@@ -22,7 +26,17 @@ namespace ElderBot
             // check if activity is of type message
             if (activity != null && activity.GetActivityType() == ActivityTypes.Message)
             {
-                await Conversation.SendAsync(activity, () => new EchoDialog());
+                //Logging messages typed by the User to the Database
+                LogMessageToDb.WriteToDatabase
+                 (
+                     conversationid: activity.Conversation.Id
+                    , username: activity.From.Name
+                    , channel: activity.ChannelId
+                    , message: activity.Text
+                 );
+
+                //await Conversation.SendAsync(activity, () => new EchoDialog());
+                await Conversation.SendAsync(activity, () => new RootLuisDialog());
             }
             else
             {
@@ -43,6 +57,27 @@ namespace ElderBot
                 // Handle conversation state changes, like members being added and removed
                 // Use Activity.MembersAdded and Activity.MembersRemoved and Activity.Action for info
                 // Not available in all channels
+                if (message.MembersAdded.Any(o => o.Id == message.Recipient.Id))
+                {
+                    var welcome = "Hi!  My name is Elder Bot.  I can answer all manner of questions about the Church of Jesus Christ of Latter Day Saints also know as the Mormons.  What would you like to know?";
+                    var reply = message.CreateReply(welcome);
+
+                    ConnectorClient connector = new ConnectorClient(new Uri(message.ServiceUrl));
+                    if (msgcount == 0)
+                    {
+                        LogMessageToDb.WriteToDatabase
+                        (
+                            conversationid: message.Conversation.Id
+                            , username: "ElderBot"
+                            , channel: message.ChannelId
+                            , message: welcome
+                        );
+                        msgcount++;
+                    }
+
+                    //await connector.Conversations.ReplyToActivityAsync(reply);
+                    connector.Conversations.ReplyToActivity(reply);
+                }
             }
             else if (message.Type == ActivityTypes.ContactRelationUpdate)
             {
@@ -57,7 +92,8 @@ namespace ElderBot
             {
             }
 
-            return null;
+                return null;
+            
         }
     }
 }
