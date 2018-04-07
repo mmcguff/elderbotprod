@@ -25,7 +25,6 @@ namespace ElderBot.Dialogs
 
             string message = GetBotResponse.Response(topic);
 
-
             //write to database
             LogMessageToDb.WriteToDatabase
             (
@@ -34,6 +33,12 @@ namespace ElderBot.Dialogs
                 , channel: context.Activity.ChannelId
                 , message: message
             );
+
+            if(topic == "troll")
+            {
+                //activity.GetStateClient().BotState.DeleteStateForUser(activity.ChannelId, activity.From.Id);
+
+            }
 
             await context.PostAsync(message);
 

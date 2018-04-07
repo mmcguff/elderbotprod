@@ -35,6 +35,11 @@ namespace ElderBot
                     , message: activity.Text
                  );
 
+                var connector = new ConnectorClient(new Uri(activity.ServiceUrl));
+                Activity isTypingReply = activity.CreateReply();
+                isTypingReply.Type = ActivityTypes.Typing;
+                await connector.Conversations.ReplyToActivityAsync(isTypingReply);
+
                 //await Conversation.SendAsync(activity, () => new EchoDialog());
                 await Conversation.SendAsync(activity, () => new RootLuisDialog());
             }
